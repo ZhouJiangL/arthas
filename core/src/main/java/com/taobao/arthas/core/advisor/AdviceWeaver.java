@@ -592,6 +592,9 @@ public class AdviceWeaver extends ClassVisitor implements Opcodes {
 
 
             @Override
+            /**
+             * 执行方法以前将线程，堆栈信息，开始时间保存进线程上下文，供方法返回或者异常时使用
+             */
             protected void onMethodEnter() {
 
                 codeLockForTracing.lock(new CodeLock.Block() {
@@ -742,6 +745,9 @@ public class AdviceWeaver extends ClassVisitor implements Opcodes {
             }
 
             @Override
+            /**
+             * 提供行号
+             */
             public void visitLineNumber(int line, Label start) {
                 super.visitLineNumber(line, start);
                 lineNumber = line;
@@ -860,6 +866,9 @@ public class AdviceWeaver extends ClassVisitor implements Opcodes {
 
 
             @Override
+            /**
+             * 为代码锁的开启和释放提供操作码， 调用 onMethodExit
+             */
             public void visitInsn(int opcode) {
                 super.visitInsn(opcode);
                 codeLockForTracing.code(opcode);
@@ -929,6 +938,9 @@ public class AdviceWeaver extends ClassVisitor implements Opcodes {
             }
 
             @Override
+            /**
+             * tracing增强，调用真实方法
+             */
             public void visitMethodInsn(int opcode, final String owner, final String name, final String desc, boolean itf) {
                 if (isSuperOrSiblingConstructorCall(opcode, owner, name)) {
                     super.visitMethodInsn(opcode, owner, name, desc, itf);

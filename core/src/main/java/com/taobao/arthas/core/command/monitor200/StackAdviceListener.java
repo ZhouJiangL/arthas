@@ -29,7 +29,7 @@ public class StackAdviceListener extends ReflectAdviceListenerAdapter {
     @Override
     public void before(ClassLoader loader, Class<?> clazz, ArthasMethod method, Object target, Object[] args)
             throws Throwable {
-        stackThreadLocal.set(ThreadUtil.getThreadStack(Thread.currentThread()));
+        stackThreadLocal.set(ThreadUtil.getThreadStack(Thread.currentThread(), 10));
         // 开始计算本次方法调用耗时
         threadLocalWatch.start();
     }

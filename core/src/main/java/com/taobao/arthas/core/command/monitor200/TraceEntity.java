@@ -16,6 +16,7 @@ public class TraceEntity {
     public TraceEntity() {
         this.view = createTreeView();
         this.deep = 0;
+        
     }
 
     public TreeView getView() {
@@ -34,7 +35,7 @@ public class TraceEntity {
         this.deep = deep;
     }
 
-    private TreeView createTreeView() {
+	private TreeView createTreeView() {
         String threadTitle = "ts=" + DateUtils.getCurrentDate()+ ";" + ThreadUtil.getThreadTitle(Thread.currentThread());
         return new TreeView(true, threadTitle);
     }

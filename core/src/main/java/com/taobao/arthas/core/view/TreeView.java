@@ -27,7 +27,7 @@ public class TreeView implements View {
 
     // 当前节点
     private Node current;
-
+    
     // 最耗时的节点
     private Node maxCost;
 
@@ -39,7 +39,7 @@ public class TreeView implements View {
     }
 
     @Override
-    public String draw() {
+    public synchronized String draw() {
 
         findMaxCostNode(root);
 
@@ -119,7 +119,7 @@ public class TreeView implements View {
      * @param data 节点数据
      * @return this
      */
-    public TreeView begin(String data) {
+    public synchronized TreeView begin(String data) {
         Node n = current.find(data);
         if (n != null) {
             current = n;
@@ -135,7 +135,7 @@ public class TreeView implements View {
      *
      * @return this
      */
-    public TreeView end() {
+    public synchronized TreeView end() {
         if (current.isRoot()) {
             throw new IllegalStateException("current node is root.");
         }
@@ -149,7 +149,7 @@ public class TreeView implements View {
      *
      * @return this
      */
-    public TreeView end(String mark) {
+    public synchronized TreeView end(String mark) {
         if (current.isRoot()) {
             throw new IllegalStateException("current node is root.");
         }
@@ -158,8 +158,7 @@ public class TreeView implements View {
         return this;
     }
 
-
-    /**
+	/**
      * 树节点
      */
     private static class Node {
@@ -195,7 +194,7 @@ public class TreeView implements View {
          * 备注
          */
         private String mark;
-
+        
         /**
          * 构造树节点(根节点)
          */
@@ -241,7 +240,7 @@ public class TreeView implements View {
         boolean isLeaf() {
             return children.isEmpty();
         }
-
+        
         Node markBegin() {
             beginTimestamp = System.nanoTime();
             return this;
@@ -301,6 +300,7 @@ public class TreeView implements View {
         private long totalCost = 0;
         private long times = 0;
         private long marks = 0;
+        
     }
 
 

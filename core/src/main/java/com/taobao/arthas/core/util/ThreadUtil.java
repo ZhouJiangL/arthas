@@ -345,17 +345,17 @@ abstract public class ThreadUtil {
      *
      * @return 方法堆栈信息
      */
-    public static String getThreadStack(Thread currentThread) {
+    public static String getThreadStack(Thread currentThread, int ignore) {
         StackTraceElement[] stackTraceElementArray = currentThread.getStackTrace();
 
-        StackTraceElement locationStackTraceElement = stackTraceElementArray[10];
+        StackTraceElement locationStackTraceElement = stackTraceElementArray[ignore];
         String locationString = String.format("    @%s.%s()", locationStackTraceElement.getClassName(),
                 locationStackTraceElement.getMethodName());
 
         StringBuilder builder = new StringBuilder();
         builder.append(getThreadTitle(currentThread)).append("\n").append(locationString).append("\n");
 
-        int skip = 11;
+        int skip = ignore + 1;
         for (int index = skip; index < stackTraceElementArray.length; index++) {
             StackTraceElement ste = stackTraceElementArray[index];
             builder.append("        at ")

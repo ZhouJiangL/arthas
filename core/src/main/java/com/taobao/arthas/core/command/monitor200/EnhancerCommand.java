@@ -96,9 +96,10 @@ public abstract class EnhancerCommand extends AnnotatedCommand {
             return;
         }
         int lock = session.getLock();
+        AdviceListener listener = null;
         try {
             Instrumentation inst = session.getInstrumentation();
-            AdviceListener listener = getAdviceListener(process);
+            listener = getAdviceListener(process);
             if (listener == null) {
                 warn(process, "advice listener is null");
                 return;
@@ -130,11 +131,19 @@ public abstract class EnhancerCommand extends AnnotatedCommand {
                 if (process.isForeground()) {
                     process.echoTips(Constants.Q_OR_CTRL_C_ABORT_MSG + "\n");
                 }
+            } else {
+            	// 如果按了Q或者Ctrl+C，中断了进程，发生了unlock，需要关闭listener的线程
+            	if (listener instanceof AbstractSlowTraceAdviceListener) {
+            		((AbstractSlowTraceAdviceListener) listener).setClose(true);
+            	}
             }
 
             process.write(effect + "\n");
         } catch (UnmodifiableClassException e) {
             logger.error(null, "error happens when enhancing class", e);
+            if (listener != null && listener instanceof AbstractSlowTraceAdviceListener) {
+        		((AbstractSlowTraceAdviceListener) listener).setClose(true);
+        	}
         } finally {
             if (session.getLock() == lock) {
                 // enhance结束后解锁

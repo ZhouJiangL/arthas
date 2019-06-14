@@ -5,6 +5,8 @@ import org.objectweb.asm.commons.AdviceAdapter;
 
 /**
  * ASM代码锁<br/>
+ * JSRInlinerAdapter的visitInsn会将code传入code方法，以此改变isLook值
+ * JSRInlinerAdapter的visitMethodInsn进行tracing时，需要读取isLook
  * Created by vlinux on 15/5/28.
  */
 public class AsmCodeLock implements CodeLock, Opcodes {
