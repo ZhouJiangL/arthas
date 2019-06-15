@@ -28,5 +28,7 @@
     
 ### Usage
 
+###### 1. slow-trace
+
    $ slow-trace demo.MathGame run '#cost > 10' -c 10
     
