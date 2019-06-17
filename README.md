@@ -33,5 +33,5 @@
 
 ###### 1. slow-trace
 
-   $ slow-trace demo.MathGame run '#cost > 10' -c 10
+   $ slow-trace demo.MathGame run '#cost > 10' -c 10 -p 1
     
