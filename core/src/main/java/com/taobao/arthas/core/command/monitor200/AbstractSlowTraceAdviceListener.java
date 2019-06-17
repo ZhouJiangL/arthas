@@ -2,9 +2,10 @@ package com.taobao.arthas.core.command.monitor200;
 
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
@@ -63,8 +64,8 @@ public class AbstractSlowTraceAdviceListener extends ReflectAdviceListenerAdapte
         	return this.listenerThread == other.listenerThread;
         }
     }
-    private final ExecutorService executorService = Executors.newFixedThreadPool(1, 
-            new ThreadFactory() {
+    private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1, 
+            new ThreadFactory() {//线程会不会泄露？
         private AtomicInteger seq = new AtomicInteger(0);
 
         @Override
@@ -74,7 +75,6 @@ public class AbstractSlowTraceAdviceListener extends ReflectAdviceListenerAdapte
             return t;
         }
     });
-    private volatile boolean close = false;//线程会不会泄露？
     
     /**
      * Constructor
@@ -82,13 +82,18 @@ public class AbstractSlowTraceAdviceListener extends ReflectAdviceListenerAdapte
     public AbstractSlowTraceAdviceListener(SlowTraceCommand command, CommandProcess process) {
         this.command = command;
         this.process = process;
-        start();
+        int period = 1;
+        if (command.getPeriod() > 0) {
+        	period = command.getPeriod();
+        }
+        scheduledExecutorService.scheduleAtFixedRate(new CheckThread(), 0, period, 
+        		TimeUnit.MILLISECONDS);
     }
 
     @Override
     public void destroy() {
         threadBoundEntity.remove();
-        close = true;
+        scheduledExecutorService.shutdown();
         LogUtil.getArthasLogger().info("trace listener closed...................................");
     }
 
@@ -140,58 +145,53 @@ public class AbstractSlowTraceAdviceListener extends ReflectAdviceListenerAdapte
         }
     }
     
-    protected void setClose(boolean close) {
-		this.close = close;
+    protected void shutdownThreadPool() {
+    	scheduledExecutorService.shutdown();
 	}
 
-	private void start() {
-    	executorService.execute(new Runnable() {
-            @Override
-            public void run() {
-            	while (!close) {
-            		try {
-            			Iterator<SlowTraceThreadInfo> iterator = slowTraceThreadInfoQueue.iterator();
-            			while (iterator.hasNext()) {
-            				SlowTraceThreadInfo slowTraceThreadInfo = iterator.next();
-            				if (slowTraceThreadInfo != null) {
-            					long currentTimestamp = System.nanoTime();
-                    	    	double cost = (currentTimestamp - slowTraceThreadInfo.beginTimestamp) / 1000000.0;
-                    	    	double cost4EndThreshold = command.getCost4EndThreshold();
-                    	    	if (cost4EndThreshold > 0 && cost >= cost4EndThreshold) {
-                    	    		try {
-                    	    			String stackInfo = ThreadUtil.getThreadStack(slowTraceThreadInfo.listenerThread, 0);
-                    	        		StringBuilder builder = new StringBuilder();
-                    	        		builder.append("threshold: " + command.getCost4EndThreshold() + ", totalCost:" + cost + "\n");
-                    	        		builder.append("ts=" + DateUtils.getCurrentDate() + ";" + stackInfo + "\n");
-                    	        		builder.append("\n");
-                    	        		builder.append(threadBoundEntity.get().view.draw() + "\n"); //需要在treeview上加锁
-                    	        		
-                    	        		if (isConditionMet(command.getConditionExpress(), slowTraceThreadInfo.advice, cost)) {
-                    	        			process.times().incrementAndGet();
-                    	        			process.write(builder.toString());
-                    	        			if (isLimitExceeded(command.getNumberOfLimit(), process.times().get())) {
-                    	                        // TODO: concurrency issue to abort process
-                    	                        abortProcess(process, command.getNumberOfLimit());
-                    	                    }
-                    	        		}
-                    	            } catch (Throwable e) {
-                    	                LogUtil.getArthasLogger().warn("print overtime stack failed.", e);
-                    	                process.write("trace failed, condition is: " + command.getConditionExpress() + ", " + e.getMessage()
-                                        + ", visit " + LogUtil.LOGGER_FILE + " for more details.\n");
-                                        process.end();
-                    	            } finally {
-                    	            	threadBoundEntity.remove();
-                    	            	iterator.remove();
-                    	            }
-                    	        }
-            				}
-            			}
-                    } catch (Throwable e) {
-                    	LogUtil.getArthasLogger().warn("loop queue failed.", e);
-                    }
-            		LockSupport.parkNanos(1);
-            	}
+	private class CheckThread implements Runnable {
+		@Override
+        public void run() {
+			try {
+    			Iterator<SlowTraceThreadInfo> iterator = slowTraceThreadInfoQueue.iterator();
+    			while (iterator.hasNext()) {
+    				SlowTraceThreadInfo slowTraceThreadInfo = iterator.next();
+    				if (slowTraceThreadInfo != null) {
+    					long currentTimestamp = System.nanoTime();
+            	    	double cost = (currentTimestamp - slowTraceThreadInfo.beginTimestamp) / 1000000.0;
+            	    	double cost4EndThreshold = command.getCost4EndThreshold();
+            	    	if (cost4EndThreshold > 0 && cost >= cost4EndThreshold) {
+            	    		try {
+            	    			String stackInfo = ThreadUtil.getThreadStack(slowTraceThreadInfo.listenerThread, 0);
+            	        		StringBuilder builder = new StringBuilder();
+            	        		builder.append("threshold: " + command.getCost4EndThreshold() + ", totalCost:" + cost + "\n");
+            	        		builder.append("ts=" + DateUtils.getCurrentDate() + ";" + stackInfo + "\n");
+            	        		builder.append("\n");
+            	        		builder.append(threadBoundEntity.get().view.draw() + "\n"); //需要在treeview上加锁
+            	        		
+            	        		if (isConditionMet(command.getConditionExpress(), slowTraceThreadInfo.advice, cost)) {
+            	        			process.times().incrementAndGet();
+            	        			process.write(builder.toString());
+            	        			if (isLimitExceeded(command.getNumberOfLimit(), process.times().get())) {
+            	                        // TODO: concurrency issue to abort process
+            	                        abortProcess(process, command.getNumberOfLimit());
+            	                    }
+            	        		}
+            	            } catch (Throwable e) {
+            	                LogUtil.getArthasLogger().warn("print overtime stack failed.", e);
+            	                process.write("trace failed, condition is: " + command.getConditionExpress() + ", " + e.getMessage()
+                                + ", visit " + LogUtil.LOGGER_FILE + " for more details.\n");
+                                process.end();
+            	            } finally {
+            	            	threadBoundEntity.remove();
+            	            	iterator.remove();
+            	            }
+            	        }
+    				}
+    			}
+            } catch (Throwable e) {
+            	LogUtil.getArthasLogger().warn("loop queue failed.", e);
             }
-        });
+        }
     }
 }

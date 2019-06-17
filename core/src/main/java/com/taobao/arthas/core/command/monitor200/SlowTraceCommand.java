@@ -44,6 +44,7 @@ public class SlowTraceCommand extends EnhancerCommand {
     private List<String> pathPatterns;
     private boolean skipJDKTrace;
     private double cost4EndThreshold = 0;
+    private int period;
 
     @Argument(argName = "class-pattern", index = 0)
     @Description("Class name pattern, use either '.' or '/' as separator")
@@ -79,6 +80,12 @@ public class SlowTraceCommand extends EnhancerCommand {
     @Description("Threshold of cost for process end")
 	public void setCost4EndThreshold(double cost4EndThreshold) {
 		this.cost4EndThreshold = cost4EndThreshold;
+	}
+    
+    @Option(shortName = "p", longName = "period")
+    @Description("time interval of the check thread running")
+    public void setPeriod(int period) {
+		this.period = period;
 	}
 
 	@Option(shortName = "p", longName = "path", acceptMultipleValues = true)
@@ -117,7 +124,11 @@ public class SlowTraceCommand extends EnhancerCommand {
         return numberOfLimit;
     }
     
-    public double getCost4EndThreshold() {
+    public int getPeriod() {
+		return period;
+	}
+
+	public double getCost4EndThreshold() {
 		return cost4EndThreshold;
 	}
     

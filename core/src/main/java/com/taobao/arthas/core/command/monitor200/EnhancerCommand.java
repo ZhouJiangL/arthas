@@ -134,7 +134,7 @@ public abstract class EnhancerCommand extends AnnotatedCommand {
             } else {
             	// 如果按了Q或者Ctrl+C，中断了进程，发生了unlock，需要关闭listener的线程
             	if (listener instanceof AbstractSlowTraceAdviceListener) {
-            		((AbstractSlowTraceAdviceListener) listener).setClose(true);
+            		((AbstractSlowTraceAdviceListener) listener).shutdownThreadPool();
             	}
             }
 
@@ -142,7 +142,7 @@ public abstract class EnhancerCommand extends AnnotatedCommand {
         } catch (UnmodifiableClassException e) {
             logger.error(null, "error happens when enhancing class", e);
             if (listener != null && listener instanceof AbstractSlowTraceAdviceListener) {
-        		((AbstractSlowTraceAdviceListener) listener).setClose(true);
+        		((AbstractSlowTraceAdviceListener) listener).shutdownThreadPool();
         	}
         } finally {
             if (session.getLock() == lock) {
