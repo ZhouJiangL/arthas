@@ -23,7 +23,10 @@
     the value, slow-trace can print the time cost, which is as same as that of the command trace,   
     and the related current thread stack information. 
     
-    Attention please, the time value is in milliseconds.
+    In addition, slow-trace provides an option "-p" and another time value, to specify the running interval
+    of check threads that check whether method callings are overtime.
+    
+    Attention please, both the time values are in milliseconds.
     
     
 ### Usage
