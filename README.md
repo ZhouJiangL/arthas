@@ -35,3 +35,4 @@
 
    $ slow-trace demo.MathGame run '#cost > 10' -c 10 -p 1
     
+<a href="annex/附件1.docx" target="_blank">附件1</a>
